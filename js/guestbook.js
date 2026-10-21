@@ -1,8 +1,9 @@
 import { $, reduce, toast } from './utils.js';
 import { hearts } from './sky.js';
 import { feedBubbles } from './bubbles.js';
+import { connect } from './backend.js';
 
-/* guestbook + live room, backed by claude.ai Artifact capabilities (db, user, room) */
+/* guestbook + live room, on claude.ai capabilities or Firebase (see backend.js) */
 const form = $('#rsvp');
 const list = $('#gblist');
 const stat = $('#gbstat');
@@ -11,9 +12,8 @@ const submitB = $('#f-submit');
 const delB = $('#f-del');
 
 let uid = null;
-let col = null;
+let be = null; // backend from connect()
 let mine = null;
-let room = null;
 
 const rtf = new Intl.RelativeTimeFormat('ko', { numeric: 'auto' });
 function ago(t) {
@@ -60,9 +60,8 @@ function noteEl(d) {
   return n;
 }
 
-function render(snap) {
-  const docs = snap.docs.filter((d) => d.exists).map((d) => ({ id: d.id, ...d.data() }));
-  feedBubbles(snap, docs);
+function render(docs, changed) {
+  feedBubbles(docs, changed);
 
   mine = docs.find((d) => d.id === uid) || null;
   delB.hidden = !mine;
@@ -87,36 +86,24 @@ function render(snap) {
 
 /* ---------- connect ---------- */
 (async () => {
-  const C = window.claude;
-  if (!C || !C.use) {
-    lockForm('방명록은 claude.ai에서 열었을 때 사용할 수 있어요.');
+  const { backend, error } = await connect();
+  if (error) {
+    lockForm(error);
     emptyMsg('지금은 방명록을 불러올 수 없어요.');
     return;
   }
-  const [db, user, rm] = await Promise.all([C.use('db'), C.use('user'), C.use('room')]);
+  be = backend;
+  uid = be.uid;
 
-  if (rm) {
-    room = rm;
-    room.on('cheer', (m) => {
-      if (m.sameTab) return;
-      hearts(innerWidth * (0.2 + Math.random() * 0.6), innerHeight * 0.85, 26);
-      toast('누군가 축하 하트를 보냈어요');
-    });
-    room.onPeers((ch) => {
-      const n = ch.peers.filter((p) => p.kind === 'viewer').length;
-      $('#live').hidden = n < 1;
-      $('#liven').textContent = n;
-    });
-  }
-
-  if (!db) {
-    lockForm('로그인하면 방명록을 보고 남길 수 있어요.');
-    emptyMsg('로그인하면 축하 메시지를 볼 수 있어요.');
-    return;
-  }
-  uid = user ? await user.id() : null;
-  col = db.collection('guestbook');
-  col.orderBy('at', 'desc').limit(200).onSnapshot(render, () => emptyMsg('방명록 연결이 끊겼어요. 새로고침해 주세요.'));
+  be.onCheer(() => {
+    hearts(innerWidth * (0.2 + Math.random() * 0.6), innerHeight * 0.85, 26);
+    toast('누군가 축하 하트를 보냈어요');
+  });
+  be.onCount((n) => {
+    $('#live').hidden = n < 1;
+    $('#liven').textContent = n;
+  });
+  be.listen(render, () => emptyMsg('방명록 연결이 끊겼어요. 새로고침해 주세요.'));
 
   if (!uid) {
     lockForm('이 링크로 들어온 방문자는 메시지를 남길 수 없어요. 읽기만 가능해요.');
@@ -124,9 +111,8 @@ function render(snap) {
   }
 
   // prefill with my previous entry
-  const me = await col.doc(uid).get().catch(() => null);
-  if (me && me.exists) {
-    const d = me.data();
+  const d = await be.getMine();
+  if (d) {
     $('#f-name').value = d.name || '';
     $('#f-msg').value = d.msg || '';
     $('#f-count').value = d.count || 1;
@@ -138,7 +124,7 @@ function render(snap) {
 /* ---------- form ---------- */
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!col || !uid) return;
+  if (!be || !uid) return;
 
   const name = $('#f-name').value.trim();
   const msg = $('#f-msg').value.trim();
@@ -152,7 +138,7 @@ form.addEventListener('submit', async (e) => {
   submitB.disabled = true;
   status.textContent = '저장하는 중…';
   try {
-    await col.doc(uid).set({
+    await be.save({
       name: name.slice(0, 20),
       msg: msg.slice(0, 300),
       count,
@@ -167,7 +153,7 @@ form.addEventListener('submit', async (e) => {
   } catch (err) {
     const code = err && err.code;
     status.textContent =
-      code === 'invalid_argument' ? '이 링크에서는 메시지를 남길 권한이 없어요.'
+      code === 'invalid_argument' || code === 'permission-denied' ? '이 링크에서는 메시지를 남길 권한이 없어요.'
       : code === 'quota_exceeded' ? '방명록이 가득 찼어요.'
       : '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
   } finally {
@@ -177,7 +163,7 @@ form.addEventListener('submit', async (e) => {
 
 /* delete needs two taps within 3s */
 delB.addEventListener('click', async () => {
-  if (!col || !uid) return;
+  if (!be || !uid) return;
   if (delB.dataset.arm !== '1') {
     delB.dataset.arm = '1';
     delB.textContent = '한 번 더 누르면 삭제돼요';
@@ -190,7 +176,7 @@ delB.addEventListener('click', async () => {
   delB.dataset.arm = '';
   delB.textContent = '내 메시지 삭제';
   try {
-    await col.doc(uid).delete();
+    await be.remove();
     toast('메시지를 삭제했어요');
   } catch {
     status.textContent = '삭제하지 못했어요. 잠시 후 다시 시도해 주세요.';
@@ -201,7 +187,7 @@ delB.addEventListener('click', async () => {
 $('#burst').addEventListener('click', (e) => {
   const r = e.currentTarget.getBoundingClientRect();
   hearts(r.left + r.width / 2, r.top + r.height / 2, 48);
-  if (room) room.emit('cheer', {}).catch(() => {});
+  if (be) be.cheer();
   if (reduce) toast('축하해 주셔서 고마워요');
 });
 

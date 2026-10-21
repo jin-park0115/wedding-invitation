@@ -9,6 +9,11 @@
 - 약도 애니메이션, 주소·계좌 복사, 오르골 배경음악(WebAudio)
 - 다크모드, '동작 줄이기' 설정 대응
 
-방명록은 claude.ai Artifact의 `db` 기능을 쓰기 때문에 claude.ai에서 열었을 때만 동작합니다.
+방명록, 실시간 말풍선, 하트 공유, "N명이 보고 있어요"는 열린 곳에 따라 저장소가 달라집니다 (`js/backend.js`).
+
+- claude.ai Artifact: Artifact의 `db` · `user` · `room` 기능
+- GitHub Pages 등 그 밖: Firebase 익명 로그인 + Firestore (`js/firebase-config.js`, 프로젝트 `jin-wedding-invitation`)
+
+보안 규칙은 `firestore.rules`에 있고, 고친 뒤에는 `npx firebase-tools deploy --only firestore:rules`로 올립니다. 익명 로그인을 쓰기 때문에 GitHub Pages가 아닌 다른 도메인에서 열려면 Firebase Auth의 승인된 도메인에 그 도메인을 추가해야 합니다.
 
 이름, 장소, 계좌는 모두 가상입니다.

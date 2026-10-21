@@ -55,17 +55,15 @@ setInterval(() => {
   if (pool.length) bubble(pool[poolIdx++ % pool.length], false);
 }, 6500);
 
-/* call on every guestbook snapshot; the first one only seeds what's already there */
-export function feedBubbles(snap, docs) {
+/* call on every guestbook update; the first one only seeds what's already there */
+export function feedBubbles(docs, changed) {
   pool = docs.filter((d) => d.msg).sort(() => Math.random() - 0.5);
   if (firstSnap) {
     firstSnap = false;
     docs.forEach((d) => seen.add(d.id + ':' + d.at));
     return;
   }
-  snap.docChanges().forEach((c) => {
-    if (c.type === 'removed') return;
-    const d = { id: c.doc.id, ...c.doc.data() };
+  changed.forEach((d) => {
     const k = d.id + ':' + d.at;
     if (!seen.has(k)) {
       seen.add(k);

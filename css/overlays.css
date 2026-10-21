@@ -1,0 +1,180 @@
+/* scroll progress + petals */
+#progress {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: env(safe-area-inset-top, 0px);
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--blush));
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  z-index: 20;
+}
+#sky {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 15;
+}
+
+/* floating music */
+#music {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 18px -8px rgba(13, 18, 48, 0.45);
+}
+#music svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--indigo);
+}
+#music.on svg {
+  animation: spin 4s linear infinite;
+}
+#music.on::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--blush);
+  animation: ring 1.6s ease-out infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ring {
+  from {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 20px);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  opacity: 0;
+  transition: all 0.35s;
+  z-index: 40;
+  pointer-events: none;
+  max-width: calc(100% - 32px);
+  text-align: center;
+}
+#toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* live message bubbles */
+#bubbles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 18;
+  perspective: 800px;
+  overflow: hidden;
+}
+.bub {
+  position: absolute;
+  bottom: -140px;
+  max-width: min(240px, 70vw);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px 18px 18px 4px;
+  padding: 10px 14px;
+  box-shadow: 0 14px 30px -14px rgba(13, 18, 48, 0.5);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+  opacity: 0;
+  animation: float var(--dur, 11s) linear forwards;
+}
+.bub b {
+  display: block;
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--blush);
+}
+.bub span {
+  overflow-wrap: anywhere;
+}
+.bub.new {
+  border-color: var(--blush);
+  box-shadow:
+    0 0 0 4px var(--blush-soft),
+    0 14px 30px -14px rgba(13, 18, 48, 0.5);
+}
+@keyframes float {
+  0% {
+    transform: translate3d(0, 0, var(--z)) rotateY(var(--ry)) scale(0.7);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate3d(var(--sx), -58vh, var(--z)) rotateY(calc(var(--ry) * -1)) scale(1);
+  }
+  88% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(0, -118vh, var(--z)) rotateY(var(--ry)) scale(1);
+    opacity: 0;
+  }
+}
+
+#live {
+  position: fixed;
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  box-shadow: 0 6px 18px -8px rgba(13, 18, 48, 0.45);
+  font-variant-numeric: tabular-nums;
+}
+#live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blush);
+  animation: ring2 1.6s ease-out infinite;
+}
+@keyframes ring2 {
+  0% {
+    box-shadow: 0 0 0 0 var(--blush);
+  }
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}

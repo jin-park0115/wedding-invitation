@@ -1,0 +1,208 @@
+body {
+  margin: 0;
+}
+img {
+  max-width: 100%;
+}
+[hidden] {
+  display: none !important;
+}
+/* Layout: one phone-width paper column, like a folded mobile invitation, sections stacked with hairline gold dividers */
+:root {
+  --paper: #f4f5fa;
+  --paper-2: #e9ecf5;
+  --card: #ffffff;
+  --ink: #1d2242;
+  --ink-soft: #5b6183;
+  --indigo: #2d3989;
+  --blush: #d9668a;
+  --blush-soft: #f7d9e2;
+  --gold: #a8843a;
+  --line: rgba(29, 34, 66, 0.13);
+  --petal: #f0a3b8;
+  --env: #dce1f2;
+  --env-2: #c7ceea;
+  --env-3: #b9c1e3;
+  --f-display: "Hahmlet", "Nanum Myeongjo", Batang, serif;
+  --f-body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-script: "Pinyon Script", "Snell Roundhand", "Brush Script MT", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d1230;
+    --paper-2: #151b42;
+    --card: #161d48;
+    --ink: #eceaf5;
+    --ink-soft: #a4a9cb;
+    --indigo: #a9b3f2;
+    --blush: #f28fab;
+    --blush-soft: #3b2446;
+    --gold: #d8b86e;
+    --line: rgba(236, 234, 245, 0.14);
+    --petal: #f6b4c5;
+    --env: #27306b;
+    --env-2: #1d2558;
+    --env-3: #323c7e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0d1230;
+  --paper-2: #151b42;
+  --card: #161d48;
+  --ink: #eceaf5;
+  --ink-soft: #a4a9cb;
+  --indigo: #a9b3f2;
+  --blush: #f28fab;
+  --blush-soft: #3b2446;
+  --gold: #d8b86e;
+  --line: rgba(236, 234, 245, 0.14);
+  --petal: #f6b4c5;
+  --env: #27306b;
+  --env-2: #1d2558;
+  --env-3: #323c7e;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.75;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow-x: hidden;
+}
+main {
+  max-width: 420px;
+  margin: 0 auto;
+  padding-block: 24px 96px;
+  display: flex;
+  flex-direction: column;
+}
+section {
+  padding-block: 56px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+}
+section:first-child {
+  border-top: 0;
+  padding-top: 8px;
+}
+h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 22px;
+  margin: 0;
+  text-wrap: balance;
+  letter-spacing: -0.01em;
+}
+.eyebrow {
+  font-family: var(--f-script);
+  font-size: 26px;
+  color: var(--blush);
+  line-height: 1;
+  margin: 0;
+}
+p {
+  margin: 0;
+}
+.soft {
+  color: var(--ink-soft);
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid var(--blush);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.btn:hover {
+  background: var(--paper-2);
+}
+.btn:active {
+  transform: scale(0.96);
+}
+.btn.primary {
+  background: var(--indigo);
+  color: var(--paper);
+  border-color: transparent;
+}
+.btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+/* ---------- reveal ---------- */
+.rv {
+  transition:
+    opacity 0.9s ease,
+    transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.9s;
+  transition-delay: calc(var(--d, 0) * 130ms);
+}
+.rv.pre {
+  opacity: 0.15;
+  transform: translateY(26px);
+  filter: blur(3px);
+}
+.rv.pre.in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

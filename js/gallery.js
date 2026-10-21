@@ -34,8 +34,10 @@ markDot();
 const lb = $('#lb');
 tiles.forEach((t) =>
   t.addEventListener('click', () => {
-    $('#lbuse').setAttribute('href', '#' + t.dataset.s);
-    $('#lbcap').textContent = t.dataset.c;
+    const img = t.querySelector('img');
+    $('#lbimg').src = img.src;
+    $('#lbimg').alt = img.alt;
+    $('#lbcap').textContent = t.querySelector('span').textContent;
     lb.showModal();
   })
 );

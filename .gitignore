@@ -1,2 +1,5 @@
 firebase-debug.log
 .firebase/
+
+# AI originals; the site uses the WebP copies
+images/*.png

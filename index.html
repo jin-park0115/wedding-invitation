@@ -229,6 +229,32 @@ textarea{resize:vertical;min-height:84px}
   opacity:0;transition:all .35s;z-index:40;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
+/* scroll-linked 3D */
+main>section{transform-origin:50% 0;backface-visibility:hidden}
+.stage{transform-style:preserve-3d;will-change:transform}
+.tile{will-change:transform}
+
+/* live message bubbles */
+#bubbles{position:fixed;inset:0;pointer-events:none;z-index:18;perspective:800px;overflow:hidden}
+.bub{position:absolute;bottom:-140px;max-width:min(240px,70vw);background:var(--card);border:1px solid var(--line);border-radius:18px 18px 18px 4px;
+  padding:10px 14px;box-shadow:0 14px 30px -14px rgba(13,18,48,.5);font-size:13px;line-height:1.5;text-align:left;opacity:0;
+  animation:float var(--dur,11s) linear forwards}
+.bub b{display:block;font-family:var(--f-display);font-weight:500;font-size:12px;color:var(--blush)}
+.bub span{overflow-wrap:anywhere}
+.bub.new{border-color:var(--blush);box-shadow:0 0 0 4px var(--blush-soft),0 14px 30px -14px rgba(13,18,48,.5)}
+@keyframes float{
+  0%{transform:translate3d(0,0,var(--z)) rotateY(var(--ry)) scale(.7);opacity:0}
+  8%{opacity:.95}
+  50%{transform:translate3d(var(--sx),-58vh,var(--z)) rotateY(calc(var(--ry) * -1)) scale(1)}
+  88%{opacity:.95}
+  100%{transform:translate3d(0,-118vh,var(--z)) rotateY(var(--ry)) scale(1);opacity:0}}
+.gbtools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+#live{position:fixed;left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:30;
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;display:flex;gap:6px;align-items:center;
+  box-shadow:0 6px 18px -8px rgba(13,18,48,.45);font-variant-numeric:tabular-nums}
+#live i{width:7px;height:7px;border-radius:50%;background:var(--blush);animation:ring2 1.6s ease-out infinite}
+@keyframes ring2{0%{box-shadow:0 0 0 0 var(--blush)}100%{box-shadow:0 0 0 7px transparent}}
+
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   html{scroll-behavior:auto}
@@ -464,6 +490,7 @@ textarea{resize:vertical;min-height:84px}
       </div>
     </form>
     <div class="gbstat rv" id="gbstat" hidden></div>
+    <div class="gbtools"><button class="btn" type="button" id="bubtoggle" aria-pressed="true">말풍선 끄기</button></div>
     <div class="gblist" id="gblist"><p class="empty">방명록을 불러오는 중이에요.</p></div>
   </section>
 
@@ -479,6 +506,8 @@ textarea{resize:vertical;min-height:84px}
 
 <button id="music" type="button" aria-label="배경음악 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v11.3A3.5 3.5 0 1 0 11 17.5V8h6V3H9z"/></svg></button>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="bubbles" aria-hidden="true"></div>
+<div id="live" hidden><i></i><span>지금 <b id="liven">1</b>명이 함께 보고 있어요</span></div>
 
 <script>
 (() => {
@@ -508,15 +537,37 @@ function onScroll(){
   const r = tl.getBoundingClientRect(), mark = innerHeight*.62;
   tl.style.setProperty('--p', Math.min(1, Math.max(0, (mark - r.top) / r.height)).toFixed(3));
   evs.forEach(e => e.classList.toggle('on', e.getBoundingClientRect().top < mark));
+  if (!reduce) depth();
 }
+
+/* 3D: sections lift up like cards as they enter; the hero tips back as you leave it */
+const secs = [...document.querySelectorAll('main > section')].slice(1), stage = $('#stage');
+let tiltX = 0, tiltY = 0;
+function depth(){
+  const vh = innerHeight;
+  secs.forEach(s => { const r = s.getBoundingClientRect();
+    if (r.top > vh + 100 || r.bottom < -100) return;
+    const t = Math.min(1, Math.max(0, (r.top - vh*.5) / (vh*.5)));
+    s.style.transform = t ? `perspective(1100px) rotateX(${(t*28).toFixed(2)}deg) translateZ(${(-t*90).toFixed(1)}px)` : ''; });
+  const hr = stage.getBoundingClientRect(), ht = Math.min(1, Math.max(0, -hr.top / hr.height));
+  stage.style.transform = `perspective(1000px) rotateX(${(ht*32 + tiltX).toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) translateZ(${(-ht*140).toFixed(1)}px)`;
+}
+if (!reduce && matchMedia('(pointer: fine)').matches){
+  stage.addEventListener('pointermove', e => { const r = stage.getBoundingClientRect();
+    tiltY = ((e.clientX - r.left) / r.width - .5) * 16; tiltX = -((e.clientY - r.top) / r.height - .5) * 10; requestAnimationFrame(depth); });
+  stage.addEventListener('pointerleave', () => { tiltX = tiltY = 0; requestAnimationFrame(depth); });
+}
+onScroll();
 addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, {passive:true});
-addEventListener('resize', onScroll); onScroll();
+addEventListener('resize', onScroll);
 
 /* gallery dots + lightbox */
 const gal = $('#gal'), tiles = [...gal.children], dots = $('#dots');
 tiles.forEach(() => dots.append(document.createElement('i')));
 function markDot(){ const c = gal.scrollLeft + gal.clientWidth/2; let best=0, bd=1e9;
-  tiles.forEach((t,i)=>{ const d=Math.abs(t.offsetLeft + t.offsetWidth/2 - gal.offsetLeft - c); if(d<bd){bd=d;best=i} });
+  tiles.forEach((t,i)=>{ const off = t.offsetLeft + t.offsetWidth/2 - gal.offsetLeft - c, d=Math.abs(off); if(d<bd){bd=d;best=i}
+    if (!reduce){ const k = Math.max(-1, Math.min(1, off / gal.clientWidth)), a = Math.abs(k);
+      t.style.transform = `perspective(800px) rotateY(${(-k*42).toFixed(2)}deg) translateZ(${(-a*110).toFixed(1)}px) scale(${(1-a*.1).toFixed(3)})`; } });
   [...dots.children].forEach((d,i)=>d.classList.toggle('on', i===best)); }
 gal.addEventListener('scroll', markDot, {passive:true}); markDot();
 const lb = $('#lb');
@@ -595,7 +646,9 @@ function frame(){
 let running=false;
 function run(){ if (!running && parts.length){ running=true; requestAnimationFrame(frame); } }
 document.addEventListener('visibilitychange', run); run();
+let room = null;
 $('#burst').addEventListener('click', e => { const r=e.currentTarget.getBoundingClientRect(); hearts(r.left+r.width/2, r.top+r.height/2, 48); run();
+  if (room) room.emit('cheer', {}).catch(() => {});
   if (reduce) toast('축하해 주셔서 고마워요'); });
 let endBurst=false;
 if ('IntersectionObserver' in window) new IntersectionObserver(es=>{ if(es[0].isIntersecting && !endBurst){ endBurst=true; hearts(innerWidth/2, innerHeight*.75, 30); run(); } },{threshold:.6}).observe($('.end'));
@@ -635,8 +688,39 @@ function ago(t){ const s=(t-Date.now())/1000, a=Math.abs(s);
 function lockForm(msg){ [...form.elements].forEach(el=>el.disabled=true); status.textContent=msg; }
 function emptyMsg(msg){ list.replaceChildren(Object.assign(document.createElement('p'),{className:'empty',textContent:msg})); }
 let uid=null, col=null, mine=null;
+/* live bubbles: new messages pop up at once, older ones drift by every few seconds */
+const layer = $('#bubbles'), bubB = $('#bubtoggle');
+let bubOn = true; try { bubOn = localStorage.getItem('bubbles') !== '0'; } catch {}
+let pool = [], poolIdx = 0, seen = new Set(), firstSnap = true;
+function setBub(on){ bubOn = on; bubB.textContent = on ? '말풍선 끄기' : '말풍선 켜기'; bubB.setAttribute('aria-pressed', String(on));
+  if (!on) layer.replaceChildren(); try { localStorage.setItem('bubbles', on ? '1' : '0'); } catch {} }
+setBub(bubOn); bubB.addEventListener('click', () => setBub(!bubOn));
+function bubble(d, isNew){
+  if (!bubOn || reduce || document.hidden || !d.msg) return;
+  if (layer.childElementCount >= 3){ if (!isNew) return; layer.firstElementChild.remove(); }
+  const el = document.createElement('div'); el.className = 'bub' + (isNew ? ' new' : '');
+  const b = document.createElement('b'); b.textContent = (isNew ? '방금 도착 · ' : '') + String(d.name || '익명').slice(0,20);
+  const m = String(d.msg), s = document.createElement('span'); s.textContent = m.length > 80 ? m.slice(0,80) + '…' : m;
+  el.append(b, s);
+  const bw = Math.min(240, innerWidth*.7);
+  el.style.left = (8 + Math.random()*Math.max(0, innerWidth - bw - 16)) + 'px';
+  el.style.setProperty('--z', (Math.random()*160 - 80).toFixed(0) + 'px');
+  el.style.setProperty('--ry', (Math.random()*30 - 15).toFixed(1) + 'deg');
+  el.style.setProperty('--sx', (Math.random()*70 - 35).toFixed(0) + 'px');
+  el.style.setProperty('--dur', (isNew ? 9 : 11 + Math.random()*4).toFixed(1) + 's');
+  el.addEventListener('animationend', () => el.remove());
+  layer.append(el);
+}
+setInterval(() => { if (pool.length) bubble(pool[poolIdx++ % pool.length], false); }, 6500);
+function feedBubbles(snap, docs){
+  pool = docs.filter(d => d.msg).sort(() => Math.random() - .5);
+  if (firstSnap){ firstSnap = false; docs.forEach(d => seen.add(d.id + ':' + d.at)); return; }
+  snap.docChanges().forEach(c => { if (c.type === 'removed') return; const d = {id:c.doc.id, ...c.doc.data()}, k = d.id + ':' + d.at;
+    if (!seen.has(k)){ seen.add(k); bubble(d, true); } });
+}
 function render(snap){
   const docs = snap.docs.filter(d=>d.exists).map(d=>({id:d.id, ...d.data()}));
+  feedBubbles(snap, docs);
   mine = docs.find(d=>d.id===uid) || null;
   delB.hidden = !mine; submitB.textContent = mine ? '수정하기' : '남기기';
   if (!docs.length){ stat.hidden=true; emptyMsg('아직 남겨진 메시지가 없어요. 첫 번째로 축하를 전해 주세요.'); return; }
@@ -656,7 +740,12 @@ function render(snap){
 (async () => {
   const C = window.claude;
   if (!C || !C.use){ lockForm('방명록은 claude.ai에서 열었을 때 사용할 수 있어요.'); emptyMsg('지금은 방명록을 불러올 수 없어요.'); return; }
-  const [db, user] = await Promise.all([C.use('db'), C.use('user')]);
+  const [db, user, rm] = await Promise.all([C.use('db'), C.use('user'), C.use('room')]);
+  if (rm){
+    room = rm;
+    room.on('cheer', m => { if (m.sameTab) return; hearts(innerWidth*(.2 + Math.random()*.6), innerHeight*.85, 26); run(); toast('누군가 축하 하트를 보냈어요'); });
+    room.onPeers(ch => { const n = ch.peers.filter(p => p.kind === 'viewer').length; $('#live').hidden = n < 1; $('#liven').textContent = n; });
+  }
   if (!db){ lockForm('로그인하면 방명록을 보고 남길 수 있어요.'); emptyMsg('로그인하면 축하 메시지를 볼 수 있어요.'); return; }
   uid = user ? await user.id() : null;
   col = db.collection('guestbook');

@@ -51,7 +51,7 @@ function tick() {
   let ms = WED - Date.now();
   if (ms <= 0) {
     $('#dday').textContent = 'JUST MARRIED';
-    $('#cdtext').textContent = '사토루와 희수가 부부가 되었습니다';
+    $('#cdtext').textContent = '사토루와 희주가 부부가 되었습니다';
     ms = 0;
   } else {
     $('#dday').textContent = 'D-' + Math.ceil(ms / 86400000);

@@ -65,10 +65,14 @@
   font-size: 21px;
   letter-spacing: 0.05em;
   display: flex;
-  gap: 0.6em;
+  gap: 0.12em;
   align-items: center;
 }
+.ko-names .word {
+  margin-left: 0.3em;
+}
 .ko-names i {
+  margin-inline: 0.35em;
   font-style: normal;
   font-family: var(--f-script);
   color: var(--blush);

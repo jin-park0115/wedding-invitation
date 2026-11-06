@@ -138,6 +138,41 @@
   background: var(--line);
   transition: all 0.3s;
 }
+.dots i {
+  cursor: pointer;
+}
+.galwrap {
+  position: relative;
+}
+.gnav {
+  position: absolute;
+  top: 36%;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 22px;
+  line-height: 1;
+  box-shadow: 0 6px 18px -8px rgba(13, 18, 48, 0.45);
+  transform: translateY(-50%);
+}
+.gnav.prev {
+  left: -14px;
+}
+.gnav.next {
+  right: -14px;
+}
+.gnav:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (hover: none) {
+  .gnav {
+    display: none;
+  }
+}
 .dots i.on {
   width: 18px;
   background: var(--blush);
@@ -172,6 +207,7 @@ dialog img {
   width: 100%;
   height: auto;
   aspect-ratio: 16/9;
+  object-fit: cover;
   border-radius: 8px;
   display: block;
 }

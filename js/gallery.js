@@ -4,6 +4,7 @@ const gal = $('#gal');
 const tiles = [...gal.children];
 const dots = $('#dots');
 tiles.forEach(() => dots.append(document.createElement('i')));
+let current = 0;
 
 /* highlight the centered tile's dot and rotate tiles like a coverflow */
 function markDot() {
@@ -26,7 +27,26 @@ function markDot() {
     }
   });
   [...dots.children].forEach((d, i) => d.classList.toggle('on', i === best));
+  $('#gprev').disabled = best === 0;
+  $('#gnext').disabled = best === tiles.length - 1;
+  current = best;
 }
+
+/* desktop has no swipe: arrows and dots jump to a tile */
+/* Chrome snaps to the 3D-transformed tiles mid-scroll and lands off-center, so snap is paused until we arrive */
+let resnap;
+function goTo(i) {
+  gal.style.scrollSnapType = 'none';
+  gal.scrollTo({
+    left: tiles[i].offsetLeft + tiles[i].offsetWidth / 2 - gal.offsetLeft - gal.clientWidth / 2,
+    behavior: reduce ? 'auto' : 'smooth',
+  });
+  clearTimeout(resnap);
+  resnap = setTimeout(() => (gal.style.scrollSnapType = ''), 900); // scrollend isn't in Safari yet
+}
+$('#gprev').addEventListener('click', () => goTo(Math.max(0, current - 1)));
+$('#gnext').addEventListener('click', () => goTo(Math.min(tiles.length - 1, current + 1)));
+[...dots.children].forEach((d, i) => d.addEventListener('click', () => goTo(i)));
 gal.addEventListener('scroll', markDot, { passive: true });
 markDot();
 
